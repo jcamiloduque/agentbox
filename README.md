@@ -1,4 +1,4 @@
-![progress-banner](https://backend.codecrafters.io/progress/claude-code/3dacf132-2ca9-433f-8d24-106eafe36049)
+[![progress-banner](https://backend.codecrafters.io/progress/claude-code/3dacf132-2ca9-433f-8d24-106eafe36049)](https://app.codecrafters.io/users/jcamiloduque?r=2qF)
 
 # AgentBox
 
