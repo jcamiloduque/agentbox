@@ -1,35 +1,50 @@
-[![progress-banner](https://backend.codecrafters.io/progress/claude-code/3dacf132-2ca9-433f-8d24-106eafe36049)](https://app.codecrafters.io/users/jcamiloduque?r=2qF)
+![progress-banner](https://backend.codecrafters.io/progress/claude-code/3dacf132-2ca9-433f-8d24-106eafe36049)
 
-This is a starting point for Java solutions to the
-["Build Your own Claude Code" Challenge](https://codecrafters.io/challenges/claude-code).
+# AgentBox
 
-Claude Code is an AI coding assistant that uses Large Language Models (LLMs) to
-understand code and perform actions through tool calls. In this challenge,
-you'll build your own Claude Code from scratch by implementing an LLM-powered
-coding assistant.
+A lightweight Java toolkit for giving AI agents basic file and shell capabilities.
 
-Along the way you'll learn about HTTP RESTful APIs, OpenAI-compatible tool
-calling, agent loop, and how to integrate multiple tools into an AI assistant.
+## What it does
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+AgentBox provides AI agents with a small set of practical tools:
 
-# Passing the first stage
+* **Read** — Read the contents of files.
+* **Write** — Create or modify files.
+* **Bash** — Execute shell commands.
 
-The entry point for your `claude-code` implementation is in
-`src/main/java/Main.java`. Study and uncomment the relevant code, and submit to
-pass the first stage:
+These tools allow an AI agent to interact with the local environment and perform useful tasks beyond generating text.
 
-```sh
-codecrafters submit
-```
+## Configuration
 
-# Stage 2 & beyond
+AgentBox works with **OpenAI-compatible APIs**, allowing it to connect to different providers and compatible local or self-hosted models.
 
-Note: This section is for stages 2 and beyond.
+### Required environment variables
 
-1. Ensure you have `mvn` installed locally.
-2. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main/java/Main.java`.
-3. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
-   output will be streamed to your terminal.
+* `OPENAI_API_KEY` — API key used to authenticate with the AI provider.
+* `OPENAI_BASE_URL` — Base URL of the OpenAI-compatible API.
+* `OPENAI_MODEL` — Model to use.
+
+The API base URL and model can be changed to use different OpenAI-compatible providers or local models.
+
+## Project Goals
+
+AgentBox is primarily a learning project focused on exploring:
+
+* Java
+* AI agents
+* Tool calling
+* JSON Schema
+* Local system interaction
+* Agent runtimes
+
+The goal is to keep the project small and understandable while experimenting with the building blocks of AI agents.
+
+## Future
+
+The project is intentionally early-stage. Future iterations may expand the available tools and evolve the interaction model toward a more conversational agent experience.
+
+## Status
+
+**Experimental / Learning Project**
+
+AgentBox is under active experimentation and is not considered production-ready.
