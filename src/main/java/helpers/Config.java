@@ -1,3 +1,5 @@
+package helpers;
+
 import io.github.cdimascio.dotenv.Dotenv;
 
 public class Config {
