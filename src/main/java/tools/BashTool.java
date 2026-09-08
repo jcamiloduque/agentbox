@@ -1,5 +1,6 @@
 package tools;
 
+import api.ToolReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openai.core.JsonValue;
 import com.openai.models.FunctionDefinition;
@@ -34,6 +35,26 @@ public class BashTool implements ToolInterface {
                     .build())
                 .build())
             .build();
+    }
+
+    static public ToolReference getReference() {
+        return new ToolReference(
+            "function",
+            new ToolReference.Function(
+                "bash",
+                "Executes bash commands",
+                new ToolReference.Parameters(
+                    "object",
+                    Map.of(
+                        "command", new ToolReference.Property(
+                            "string",
+                            "The bash command to execute"
+                        )
+                    ),
+                    List.of("command")
+                )
+            )
+        );
     }
 
     public String execute(JsonNode arguments) throws Exception {

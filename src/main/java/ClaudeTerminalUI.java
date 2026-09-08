@@ -1,5 +1,6 @@
 import static dev.tamboui.toolkit.Toolkit.*;
 
+import api.ChatSession;
 import api.Request;
 import dev.tamboui.layout.Flex;
 import dev.tamboui.style.Color;
@@ -12,31 +13,16 @@ import dev.tamboui.tui.event.KeyEvent;
 import dev.tamboui.widgets.input.TextAreaState;
 import request.ConversationTurn;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClaudeTerminalUI extends ToolkitApp {
 
     // ── helpers.Config ────────────────────────────────────────────────────────────────
-
-    private static final String API_KEY = System.getenv("ANTHROPIC_API_KEY");
-    private static final String MODEL   = "claude-sonnet-4-6";
-    private static final String API_URL = "https://api.anthropic.com/v1/messages";
-    private static final String SYSTEM  = "You are a helpful, concise assistant. Keep replies short.";
     private static final int AUTO_SCROLL_GAP_LINES = 3;
     private static final int MIN_INPUT_LINES       = 1;
     private static final int MAX_INPUT_LINES       = 4;
     private final Request request;
-
-    // ── State ─────────────────────────────────────────────────────────────────
-
-    /** Single source of truth — drives both rendering and API calls. */
-    private final List<ConversationTurn> turns = new ArrayList<>();
+    private ChatSession session;
 
     private final TextAreaState inputState = new TextAreaState("");
 
@@ -46,14 +32,13 @@ public class ClaudeTerminalUI extends ToolkitApp {
         .rounded()
         .id("chat-log");
 
-    private final HttpClient    http      = HttpClient.newHttpClient();
     private final AtomicInteger requestId = new AtomicInteger(0);
 
     private final InputHandler input = new InputHandler(
         inputState,
         this::isInputFocused,
         this::sendMessage,
-        this::newChat,
+        this::cancelCurrentRequest,
         this::quit
     );
 
@@ -62,6 +47,7 @@ public class ClaudeTerminalUI extends ToolkitApp {
     public ClaudeTerminalUI(Request request) {
         super();
 
+        this.session = request.createChatSession();
         this.request = request;
     }
 
@@ -91,12 +77,12 @@ public class ClaudeTerminalUI extends ToolkitApp {
 
     private Element headerPanel() {
         return panel("Claude",
-            text(MODEL).dim()
+            text(session.getModel()).dim()
         ).rounded().borderColor(Color.CYAN).length(3);
     }
 
     private Element chatLog() {
-        var chatText = ChatRenderer.format(turns, chatArea.state().viewportWidth());
+        var chatText = ChatRenderer.format(session.getConversationHistory(), chatArea.state().viewportWidth());
         chatArea.text(chatText);
         if (pendingScrollToBottom) {
             chatArea.state().setContentHeight(chatText.height());
@@ -109,9 +95,9 @@ public class ClaudeTerminalUI extends ToolkitApp {
     }
 
     private boolean isThinking() {
-        if (turns.isEmpty()) return false;
-        ConversationTurn last = turns.get(turns.size() - 1);
-        return last.getResponse() == null;
+        var turn = session.getCurrentTurn();
+        if (turn == null) return false;
+        return session.getCurrentTurn().getStatus() == ConversationTurn.TurnStatus.RUNNING;
     }
 
     private Element inputPanel() {
@@ -156,9 +142,6 @@ public class ClaudeTerminalUI extends ToolkitApp {
         String text = inputState.text().trim();
         if (text.isBlank() || isThinking()) return;
 
-        ConversationTurn turn = new ConversationTurn();
-        turn.setInput(text);
-        turns.add(turn);
         input.reset();
         requestScrollToBottom();
 
@@ -166,7 +149,8 @@ public class ClaudeTerminalUI extends ToolkitApp {
 
         Thread.ofVirtual().start(() -> {
             try {
-                request.send(turn, runnable -> {
+                session.addMessage("user", escJson(text));
+                request.chat(session, runnable -> {
                     runner().runOnRenderThread(() -> {
                         if (currentRequestId != requestId.get()) return;
                         boolean nearBottom = isNearBottom();
@@ -178,69 +162,30 @@ public class ClaudeTerminalUI extends ToolkitApp {
                 runner().runOnRenderThread(() -> {
                     if (currentRequestId != requestId.get()) return;
                     boolean nearBottom = isNearBottom();
-                    turn.setResponse(e.getMessage());
-                    turn.setStatus(ConversationTurn.TurnStatus.FAILED);
+                    session.getCurrentTurn().setResponse(e.getMessage());
+                    session.getCurrentTurn().setStatus(ConversationTurn.TurnStatus.FAILED);
                     if (nearBottom) requestScrollToBottom();
                 });
             }
         });
     }
 
-    private void newChat() {
-        turns.clear();
+    private void cancelCurrentRequest() {
+        requestId.incrementAndGet();
+        if (session.getCurrentTurn() != null) {
+            session.getCurrentTurn().setStatus(ConversationTurn.TurnStatus.FAILED);
+            session.getCurrentTurn().setResponse("Request cancelled.");
+        }
+        request.cancelCurrentRequest();
         pendingScrollToBottom = true;
         input.reset();
     }
 
-    // ── API call ──────────────────────────────────────────────────────────────
-
-    private String callApi() throws Exception {
-        StringBuilder msgs = new StringBuilder("[");
-        for (int i = 0; i < turns.size(); i++) {
-            ConversationTurn turn = turns.get(i);
-            if (i > 0) msgs.append(",");
-            msgs.append("{\"role\":\"user\",\"content\":\"")
-                .append(escJson(turn.getInput()))
-                .append("\"}");
-            if (turn.getResponse() != null) {
-                msgs.append(",{\"role\":\"assistant\",\"content\":\"")
-                    .append(escJson(turn.getResponse()))
-                    .append("\"}");
-            }
-        }
-        msgs.append("]");
-
-        String body = """
-                {"model":"%s","max_tokens":1024,"system":"%s","messages":%s}
-                """.formatted(MODEL, escJson(SYSTEM), msgs).trim();
-
-        HttpRequest req = HttpRequest.newBuilder()
-            .uri(URI.create(API_URL))
-            .header("Content-Type", "application/json")
-            .header("x-api-key", API_KEY)
-            .header("anthropic-version", "2023-06-01")
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build();
-
-        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
-        return extractText(res.body());
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static String extractText(String json) {
-        int idx = json.indexOf("\"text\":");
-        if (idx < 0) return "(no response)";
-        int start = json.indexOf('"', idx + 7) + 1;
-        int end = start;
-        while (end < json.length()) {
-            if (json.charAt(end) == '"' && json.charAt(end - 1) != '\\') break;
-            end++;
-        }
-        return json.substring(start, end)
-            .replace("\\n", "\n")
-            .replace("\\\"", "\"")
-            .replace("\\\\", "\\");
+    private void newChat() {
+        session = null;
+        session = request.createChatSession();
+        pendingScrollToBottom = true;
+        input.reset();
     }
 
     private static String escJson(String s) {

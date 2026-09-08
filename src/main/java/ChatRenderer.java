@@ -18,9 +18,6 @@ public final class ChatRenderer {
     private static final String ERROR_PREFIX_FIRST = "⚠ Error: ";
     private static final String ERROR_PREFIX_CONT = "  ";
     private static final String TOOL_PREFIX         = "  ⚙ ";
-    private static final String TOOL_CONT           = "    ";
-    private static final String TOOL_RUNNING_PREFIX   = "  ⠋ ";
-    private static final String TOOL_RUNNING_CONT     = "    ";
 
     private static final Style USER_STYLE  = Style.EMPTY.fg(Color.BLACK).bg(Color.GRAY);
     private static final Style ERROR_STYLE = Style.EMPTY.fg(Color.RED).dim();
@@ -69,12 +66,14 @@ public final class ChatRenderer {
                     break;
                 case RUNNING:
                     lines.add(Line.from(Span.styled(animationFrame + " Thinking…", PROGRESS_STYLE)));
+                    renderText(lines, viewportWidth, turn.getReasoning(), "💭 ", "  ", Style.EMPTY.dim(), true);
 
                     for (ToolCall tool : turn.getToolCalls()) {
                         lines.add(toolLine(tool, toolAnimationFrame));
                     }
 
                     renderText(lines, viewportWidth, turn.getResponse(), RESPONSE_PREFIX_FIRST, RESPONSE_PREFIX_CONT, Style.EMPTY, true);
+
                     break;
             }
 

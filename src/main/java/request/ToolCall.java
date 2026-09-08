@@ -1,6 +1,7 @@
 package request;
 
 public class ToolCall {
+    private String id;
     private String name;
     private String arguments;
     private String response;
@@ -29,6 +30,14 @@ public class ToolCall {
         this.arguments = arguments;
     }
 
+    public void appendArguments(String additionalArguments) {
+        if (this.arguments == null || this.arguments.isEmpty()) {
+            this.arguments = additionalArguments;
+        } else {
+            this.arguments += additionalArguments;
+        }
+    }
+
     public String getResponse() {
         return response;
     }
@@ -51,5 +60,13 @@ public class ToolCall {
 
     public void setDurationMs(long durationMs) {
         this.durationMs = durationMs;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

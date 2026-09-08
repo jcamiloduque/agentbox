@@ -1,5 +1,6 @@
 package tools;
 
+import api.ToolReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.openai.core.JsonValue;
 import com.openai.models.FunctionDefinition;
@@ -34,6 +35,26 @@ public class ReadFileTool implements ToolInterface {
                     .build())
                 .build())
             .build();
+    }
+
+    static public ToolReference getReference() {
+        return new ToolReference(
+            "function",
+            new ToolReference.Function(
+                "read_file",
+                "Read and return the contents of a file",
+                new ToolReference.Parameters(
+                    "object",
+                    Map.of(
+                        "file_path", new ToolReference.Property(
+                            "string",
+                            "The path to the file to read"
+                        )
+                    ),
+                    List.of("file_path")
+                )
+            )
+        );
     }
 
     public String execute(JsonNode arguments) throws Exception {

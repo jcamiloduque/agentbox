@@ -1,5 +1,6 @@
 package tools;
 
+import api.ToolReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.models.chat.completions.ChatCompletionFunctionTool;
 import org.jetbrains.annotations.NotNull;
@@ -10,6 +11,14 @@ public class ToolRegistry {
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<String, Class<? extends ToolInterface>> toolsClasses = new HashMap<>();
     private final Map<String, ChatCompletionFunctionTool> toolSchemas = new HashMap<>();
+    private final Map<String, ToolReference> toolReferences = new HashMap<>();
+
+    public ToolRegistry() {
+        // Register default tools
+        registerTool(WriteTool.class);
+        registerTool(ReadFileTool.class);
+        registerTool(BashTool.class);
+    }
 
     public void registerTool(Class<? extends ToolInterface> toolClass) {
         if (!toolClass.isAnnotationPresent(Tool.class)) {
@@ -21,6 +30,7 @@ public class ToolRegistry {
 
         try {
             toolSchemas.put(toolName, (ChatCompletionFunctionTool) toolClass.getDeclaredMethod("tool").invoke(null));
+            toolReferences.put(toolName, (ToolReference) toolClass.getDeclaredMethod("getReference").invoke(null));
         } catch (Exception e) {
             throw new RuntimeException("Failed to register tool: " + toolName, e);
         }
@@ -29,6 +39,10 @@ public class ToolRegistry {
     @NotNull
     public Iterable<ChatCompletionFunctionTool> getAllTools() {
         return toolSchemas.values();
+    }
+
+    public List<ToolReference> getAllToolReferences() {
+        return new ArrayList<>(toolReferences.values());
     }
 
     public String executeTool(String toolName, String jsonArguments) throws Exception {
