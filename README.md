@@ -6,11 +6,11 @@ A lightweight Java toolkit for giving AI agents basic file and shell capabilitie
 
 ## What it does
 
-AgentBox provides AI agents with a small set of practical tools:
-
-* **Read** — Read the contents of files.
-* **Write** — Create or modify files.
-* **Bash** — Execute shell commands.
+| Action | Description |
+|--------|-------------|
+| **Read** | Read the contents of files. |
+| **Write** | Create or modify files. |
+| **Bash** | Execute shell commands. |
 
 These tools allow an AI agent to interact with the local environment and perform useful tasks beyond generating text.
 
@@ -20,9 +20,11 @@ AgentBox works with **OpenAI-compatible APIs**, allowing it to connect to differ
 
 ### Required environment variables
 
-* `OPENAI_API_KEY` — API key used to authenticate with the AI provider.
-* `OPENAI_BASE_URL` — Base URL of the OpenAI-compatible API.
-* `OPENAI_MODEL` — Model to use.
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | API key used to authenticate with the AI provider. |
+| `OPENAI_BASE_URL` | Base URL of the OpenAI-compatible API. |
+| `OPENAI_MODEL` | Model to use. |
 
 The API base URL and model can be changed to use different OpenAI-compatible providers or local models.
 
@@ -30,12 +32,12 @@ The API base URL and model can be changed to use different OpenAI-compatible pro
 
 AgentBox is primarily a learning project focused on exploring:
 
-* Java
-* AI agents
-* Tool calling
-* JSON Schema
-* Local system interaction
-* Agent runtimes
+- Java
+- AI agents
+- Tool calling
+- JSON Schema
+- Local system interaction
+- Agent runtimes
 
 The goal is to keep the project small and understandable while experimenting with the building blocks of AI agents.
 

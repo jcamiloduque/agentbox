@@ -29,6 +29,7 @@ public class CompletionRequestMessage {
     public CompletionRequestMessage(List<ChatCompletionChunk.ToolCall> toolCalls) {
         this.role = "assistant";
         this.toolCalls = toolCalls;
+        this.content = "";
     }
 
     public String getId() {

@@ -50,6 +50,11 @@ public class ChatSession {
         return currentTurn;
     }
 
+    public void addTurn(ConversationTurn turn) {
+        conversationHistory.add(turn);
+        currentTurn = turn;
+    }
+
     public List<ConversationTurn> getConversationHistory() {
         return conversationHistory;
     }

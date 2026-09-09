@@ -73,6 +73,7 @@ public class Request {
 
     public void chat(ChatSession session, Consumer<Runnable> onUiUpdate) {
         boolean shouldContinue;
+        int turnCount = 0;
         do {
             shouldContinue = doChat(session, onUiUpdate);
             // need to append the tool responses to the session messages for the next turn
@@ -94,6 +95,10 @@ public class Request {
                     session.addMessage(toolCall.getId(), toolCall.getName(), "tool", toolCall.getResponse());
                     i++;
                 }
+
+                turnCount++;
+                ConversationTurn turn = new ConversationTurn("Turn " + turnCount);
+                session.addTurn(turn);
             }
         } while (shouldContinue);
     }
