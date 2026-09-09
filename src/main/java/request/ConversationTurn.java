@@ -57,7 +57,7 @@ public class ConversationTurn {
     }
 
     public String getResponse() {
-        return response;
+        return response == null ? null : response.trim();
     }
 
     public void setResponse(String response) {
@@ -73,7 +73,7 @@ public class ConversationTurn {
     }
 
     public String getReasoning() {
-        return reasoning;
+        return reasoning == null ? null : reasoning.trim();
     }
 
     public void setReasoning(String reasoning) {

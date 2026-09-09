@@ -86,6 +86,9 @@ public final class ChatRenderer {
     }
 
     private static Line toolLine(ToolCall tool, char toolAnimationFrame) {
+        if (tool.getStatus() == null) {
+            return Line.from(Span.styled(TOOL_PREFIX + tool.getName() + "  ?", Style.EMPTY.dim()));
+        }
         String status = switch (tool.getStatus()) {
             case RUNNING   -> toolAnimationFrame + " running";
             case COMPLETED -> "✓ done";

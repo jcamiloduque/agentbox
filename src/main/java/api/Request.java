@@ -73,7 +73,6 @@ public class Request {
 
     public void chat(ChatSession session, Consumer<Runnable> onUiUpdate) {
         boolean shouldContinue;
-        int turnCount = 0;
         do {
             shouldContinue = doChat(session, onUiUpdate);
             // need to append the tool responses to the session messages for the next turn
@@ -96,9 +95,15 @@ public class Request {
                     i++;
                 }
 
-                turnCount++;
-                ConversationTurn turn = new ConversationTurn("Turn " + turnCount);
-                session.addTurn(turn);
+                onUiUpdate.accept(() -> {
+                    var turn = session.getCurrentTurn();
+                    turn.appendReasoning("\n");
+                    for (ToolCall toolCall : turn.getToolCalls()) {
+                        turn.appendReasoning("Tool " + toolCall.getName() + " executed with status: " + toolCall.getStatus() + "\n");
+                        turn.appendReasoning("Response: " + toolCall.getResponse() + "\n");
+                    }
+                });
+
             }
         } while (shouldContinue);
     }
@@ -152,20 +157,28 @@ public class Request {
             response.body().forEach(line -> {
                 ChatCompletionChunk chunk = getChatCompletionChunk(line);
                 if (chunk != null) {
-                    String reasoningContent = chunk.choices().get(0).delta().reasoningContent();
+                    var choices = chunk.choices();
+                    if (choices == null || choices.isEmpty()) {
+                        onUiUpdate.accept(() -> {
+                            currentTurn.setStatus(ConversationTurn.TurnStatus.FAILED);
+                            currentTurn.setResponse("No choices in response chunk.");
+                        });
+                        return;
+                    }
+                    String reasoningContent = choices.get(0).delta().reasoningContent();
                     if (reasoningContent != null) {
                         onUiUpdate.accept(() -> {
                             currentTurn.appendReasoning(reasoningContent);
                         });
                     }
-                    String content = chunk.choices().get(0).delta().content();
+                    String content = choices.get(0).delta().content();
                     if (content != null) {
                         onUiUpdate.accept(() -> {
                             currentTurn.appendResponse(content);
                         });
                     }
 
-                    List<ChatCompletionChunk.ToolCall> toolCallsChunk = chunk.choices().get(0).delta().toolCalls();
+                    List<ChatCompletionChunk.ToolCall> toolCallsChunk = choices.get(0).delta().toolCalls();
                     if (toolCallsChunk != null) {
                         for (int i = 0; i < toolCallsChunk.size(); i++) {
                             var toolCallChunk = toolCallsChunk.get(i);
@@ -247,18 +260,28 @@ public class Request {
     }
 
     protected ChatCompletionChunk getChatCompletionChunk(String line) {
-        List<String> lines = List.of(line.split("\n"));
+        // SSE streams can split JSON objects across multiple lines.
+        // Reassemble until we hit "[DONE]" or a complete JSON object.
+        StringBuilder chunk = new StringBuilder(line.length() + 6);
+        String prefix = "data: ";
+        boolean done = false;
 
-        for (String l : lines) {
-            if (l.startsWith("data: ") && !l.equals("data: [DONE]")) {
-                String json = l.substring(6);
+        if (line.startsWith(prefix)) {
+            String json = line.substring(prefix.length());
+
+            if (!json.equals("[DONE]")) {
+                chunk.append(json);
                 try {
-                    return mapper.readValue(json, ChatCompletionChunk.class);
+                    return mapper.readValue(chunk.toString(), ChatCompletionChunk.class);
                 } catch (JsonProcessingException e) {
-                    e.printStackTrace();
+                    System.err.println("Error parsing JSON chunk: " + chunk.toString() + " → " + e.getMessage());
+                    return null;
                 }
             }
+
+            // [DONE] signals the end of the stream — discard this chunk
         }
+
         return null;
     }
 

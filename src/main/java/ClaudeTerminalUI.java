@@ -139,8 +139,12 @@ public class ClaudeTerminalUI extends ToolkitApp {
     // ── Actions ───────────────────────────────────────────────────────────────
 
     private void sendMessage() {
-        String text = inputState.text().trim();
-        if (text.isBlank() || isThinking()) return;
+        var ref = new Object() {
+            String text = inputState.text().trim();
+        };
+        if (ref.text.isBlank() || isThinking()) return;
+        ref.text = escJson(ref.text);
+        if (ref.text.isBlank() || isThinking()) return;
 
         input.reset();
         requestScrollToBottom();
@@ -149,7 +153,7 @@ public class ClaudeTerminalUI extends ToolkitApp {
 
         Thread.ofVirtual().start(() -> {
             try {
-                session.addMessage("user", escJson(text));
+                session.addMessage("user", ref.text);
                 request.chat(session, runnable -> {
                     runner().runOnRenderThread(() -> {
                         if (currentRequestId != requestId.get()) return;
